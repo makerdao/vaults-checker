@@ -52,15 +52,14 @@ class VaultsChecker:
         web3: Web3 = Web3(provider)
         mcd = DssDeployment.from_node(web3)
         for collateral, info in get_data(mcd, self.arguments.ilk, self.arguments.target_price,).items():
-            print("====================================================")
-            print(f"Collateral: {collateral} \n"
-                  f"Current OSM price: {info.osm_price} | Next OSM price: {info.next_osm_price} | Target price: {info.target_price} \n"
-                  f"Total collateral to liquidate: {info.total_collateral} | Total DAI to liquidate: {info.dai_required}")
-            print("====================================================")
-            print("Vaults at risk: \n")
-            for urn in info.risky_urns:
-                print(f"URN: {urn.identifier} | Liquidation Price: {urn.liquidation_price} | Collateral: {urn.ink}")
-            print("====================================================")
+            if info.target_price != 0:
+                print("====================================================")
+                print(f"{collateral}: current: {info.osm_price} | next: {info.next_osm_price} | target: {info.target_price}")
+                if len(info.risky_urns) > 0:
+                    print(f"Collateral to liquidate: {info.total_collateral} | DAI to liquidate: {info.dai_required}")
+                    print("====================================================")
+                    for urn in info.risky_urns:
+                        print(f"URN: {urn.identifier} | Liquidation Price: {urn.liquidation_price} | Collateral: {urn.ink}")
 
 
 class Urn:
@@ -164,6 +163,9 @@ def get_collateral_data(mcd, vdb_data, data, target_price, collateral: str):
 
     data[collateral] = Collateral(osm_price=osm_price, next_osm_price=next_osm_price, target_price=target_price,
                                   total_collateral=0.0, dai_required=0.0, risky_urns=[])
+
+    if target_price == 0:
+        return
 
     ilk_nodes = filter(lambda node: node['id'] == collateral, vdb_data['allIlks']['nodes'])
 
